@@ -148,6 +148,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-debugger-dumper"
+version = "0.100.0-rc2"
+source = "git+https://github.com/joii2020/ckb-export-dbg-json.git#eb75f746d34590cd9506ef34d08ebef491c2d970"
+dependencies = [
+ "ckb-chain-spec",
+ "ckb-crypto",
+ "ckb-error",
+ "ckb-hash",
+ "ckb-jsonrpc-types",
+ "ckb-script",
+ "ckb-traits",
+ "ckb-types",
+ "ckb-vm",
+ "json",
+]
+
+[[package]]
 name = "ckb-error"
 version = "0.100.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -398,6 +415,7 @@ version = "0.1.0"
 dependencies = [
  "ckb-chain-spec",
  "ckb-crypto",
+ "ckb-debugger-dumper",
  "ckb-error",
  "ckb-hash",
  "ckb-script",

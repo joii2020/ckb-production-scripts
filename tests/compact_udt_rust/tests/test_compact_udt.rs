@@ -218,6 +218,12 @@ fn success_single_cell() {
     let res = tx.run();
     tx.output_json("success_single_cell");
     assert!(res.is_ok(), "error: {}", res.unwrap_err().to_string());
+
+    let cmd_line = tx.dumper(
+        "../../build/compact_udt_lock",
+        "success_single_cell.json",
+    );
+    println!("ckb-debugger command line:\n{}", cmd_line);
 }
 
 #[test]

@@ -23,5 +23,7 @@ molecule = "0.7.1"
 lazy_static = "1.4.0"
 json = "0.12.4"
 
+ckb-debugger-dumper = { git = "https://github.com/joii2020/ckb-export-dbg-json.git" }
+
 [dev-dependencies]
 

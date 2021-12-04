@@ -1,5 +1,6 @@
 use ckb_chain_spec::consensus::{Consensus, ConsensusBuilder};
 use ckb_crypto::secp::{Generator, Privkey};
+use ckb_debugger_dumper;
 use ckb_hash::{blake2b_256, Blake2b};
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
 use ckb_types::{
@@ -1138,6 +1139,25 @@ impl TX {
         let ret = verifier.verify(MAX_CYCLES);
 
         ret
+    }
+
+    pub fn dumper(&self, bin_path: &str, dumper_name: &str) -> String {
+        let consensus = TX::gen_consensus();
+        let tx_env = TX::gen_tx_env();
+        let verifier = TransactionScriptsVerifier::new(
+            &self.resolved_tx,
+            &consensus,
+            &self.data_loader,
+            &tx_env,
+        );
+        ckb_debugger_dumper::gen_json(
+            &verifier,
+            &self.resolved_tx,
+            0,
+            bin_path,
+            dumper_name,
+            Option::None,
+        )
     }
 
     pub fn output_ctrl(&self, name: &str) {
