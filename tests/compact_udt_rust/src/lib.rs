@@ -1153,6 +1153,7 @@ impl TX {
         ckb_debugger_dumper::gen_json(
             &verifier,
             &self.resolved_tx,
+            Option::None,
             0,
             bin_path,
             dumper_name,
