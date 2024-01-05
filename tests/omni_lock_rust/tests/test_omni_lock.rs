@@ -502,3 +502,209 @@ fn test_eth_unlock() {
     let verify_result = verifier.verify(MAX_CYCLES);
     verify_result.expect("pass verification");
 }
+
+fn test_btc_success(vtype: BitcoinSignVType) {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
+    config.set_bitcoin(BitcoinConfig {
+        sign_vtype: vtype,
+        pubkey_err: false,
+    });
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    verify_result.expect("pass verification");
+}
+
+fn test_btc_err_pubkey(vtype: BitcoinSignVType) {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
+    config.set_bitcoin(BitcoinConfig {
+        sign_vtype: vtype,
+        pubkey_err: true,
+    });
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    assert!(verify_result.is_err());
+    assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
+}
+
+fn test_btc(vtype: BitcoinSignVType) {
+    test_btc_success(vtype);
+    test_btc_err_pubkey(vtype);
+}
+
+#[test]
+fn test_btc_unlock() {
+    test_btc(BitcoinSignVType::P2PKHUncompressed);
+    test_btc(BitcoinSignVType::P2PKHCompressed);
+    test_btc(BitcoinSignVType::SegwitP2SH);
+    test_btc(BitcoinSignVType::SegwitBech32);
+}
+
+#[test]
+fn test_dogecoin_unlock() {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_DOGECOIN, false);
+    config.set_dogecoin(DogecoinConfig::default());
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    verify_result.expect("pass verification");
+}
+
+#[test]
+fn test_dogecoin_err_pubkey() {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_DOGECOIN, false);
+    let mut dogecoin = DogecoinConfig::default();
+    dogecoin.0.pubkey_err = true;
+    config.set_dogecoin(dogecoin);
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    assert!(verify_result.is_err())
+}
+
+fn test_eos_success(vtype: BitcoinSignVType) {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_EOS, false);
+    let mut eos = EOSConfig::default();
+    eos.0.sign_vtype = vtype;
+    config.set_eos(EOSConfig::default());
+
+    let tx: ckb_types::core::TransactionView = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    verify_result.expect("pass verification");
+}
+
+fn test_eos_err_pubkey(vtype: BitcoinSignVType) {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_EOS, false);
+    let mut eos = EOSConfig::default();
+    eos.0.sign_vtype = vtype;
+    eos.0.pubkey_err = true;
+    config.set_eos(eos);
+
+    let tx: ckb_types::core::TransactionView = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    assert!(verify_result.is_err());
+    assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
+}
+
+fn test_eos(vtype: BitcoinSignVType) {
+    test_eos_success(vtype);
+    test_eos_err_pubkey(vtype)
+}
+
+#[test]
+fn test_eos_unlock() {
+    test_eos(BitcoinSignVType::P2PKHCompressed);
+    test_eos(BitcoinSignVType::P2PKHUncompressed);
+}
+
+#[test]
+fn test_tron_unlock() {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_TRON, false);
+    config.set_tron(TronConfig::default());
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    verify_result.expect("pass verification");
+}
+
+#[test]
+fn test_tron_err_pubkey() {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_TRON, false);
+    let mut tron = TronConfig::default();
+    tron.pubkey_err = true;
+    config.set_tron(tron);
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    assert!(verify_result.is_err());
+    assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
+}
