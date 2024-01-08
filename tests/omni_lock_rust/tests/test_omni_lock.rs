@@ -503,7 +503,7 @@ fn test_eth_unlock() {
     verify_result.expect("pass verification");
 }
 
-fn test_btc_success(vtype: BitcoinSignVType) {
+fn test_btc_success(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
@@ -526,7 +526,7 @@ fn test_btc_success(vtype: BitcoinSignVType) {
     verify_result.expect("pass verification");
 }
 
-fn test_btc_err_pubkey(vtype: BitcoinSignVType) {
+fn test_btc_err_pubkey(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
@@ -550,17 +550,17 @@ fn test_btc_err_pubkey(vtype: BitcoinSignVType) {
     assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
 }
 
-fn test_btc(vtype: BitcoinSignVType) {
+fn test_btc(vtype: u8) {
     test_btc_success(vtype);
     test_btc_err_pubkey(vtype);
 }
 
 #[test]
 fn test_btc_unlock() {
-    test_btc(BitcoinSignVType::P2PKHUncompressed);
-    test_btc(BitcoinSignVType::P2PKHCompressed);
-    test_btc(BitcoinSignVType::SegwitP2SH);
-    test_btc(BitcoinSignVType::SegwitBech32);
+    test_btc(BITCOIN_V_TYPE_P2PKHUNCOMPRESSED);
+    test_btc(BITCOIN_V_TYPE_P2PKHCOMPRESSED);
+    test_btc(BITCOIN_V_TYPE_SEGWITP2SH);
+    test_btc(BITCOIN_V_TYPE_SEGWITBECH32);
 }
 
 #[test]
@@ -607,7 +607,7 @@ fn test_dogecoin_err_pubkey() {
     assert!(verify_result.is_err())
 }
 
-fn test_eos_success(vtype: BitcoinSignVType) {
+fn test_eos_success(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_EOS, false);
@@ -629,7 +629,7 @@ fn test_eos_success(vtype: BitcoinSignVType) {
     verify_result.expect("pass verification");
 }
 
-fn test_eos_err_pubkey(vtype: BitcoinSignVType) {
+fn test_eos_err_pubkey(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_EOS, false);
@@ -653,15 +653,15 @@ fn test_eos_err_pubkey(vtype: BitcoinSignVType) {
     assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
 }
 
-fn test_eos(vtype: BitcoinSignVType) {
+fn test_eos(vtype: u8) {
     test_eos_success(vtype);
     test_eos_err_pubkey(vtype)
 }
 
 #[test]
 fn test_eos_unlock() {
-    test_eos(BitcoinSignVType::P2PKHCompressed);
-    test_eos(BitcoinSignVType::P2PKHUncompressed);
+    test_eos(BITCOIN_V_TYPE_P2PKHCOMPRESSED);
+    test_eos(BITCOIN_V_TYPE_P2PKHUNCOMPRESSED);
 }
 
 #[test]

@@ -1146,23 +1146,23 @@ impl Default for MultisigTestConfig {
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum BitcoinSignVType {
-    P2PKHUncompressed,
-    P2PKHCompressed,
-    SegwitP2SH,
-    SegwitBech32,
-}
-impl Default for BitcoinSignVType {
-    fn default() -> Self {
-        Self::P2PKHCompressed
-    }
+pub const BITCOIN_V_TYPE_P2PKHUNCOMPRESSED: u8 = 27;
+pub const BITCOIN_V_TYPE_P2PKHCOMPRESSED: u8 = 31;
+pub const BITCOIN_V_TYPE_SEGWITP2SH: u8 = 35;
+pub const BITCOIN_V_TYPE_SEGWITBECH32: u8 = 39;
+
+pub struct BitcoinConfig {
+    pub sign_vtype: u8,
+    pub pubkey_err: bool,
 }
 
-#[derive(Default)]
-pub struct BitcoinConfig {
-    pub sign_vtype: BitcoinSignVType,
-    pub pubkey_err: bool,
+impl Default for BitcoinConfig {
+    fn default() -> Self {
+        Self {
+            sign_vtype: BITCOIN_V_TYPE_P2PKHCOMPRESSED,
+            pubkey_err: false,
+        }
+    }
 }
 
 impl BitcoinConfig {
@@ -1173,7 +1173,7 @@ impl BitcoinConfig {
             return r;
         }
         match self.sign_vtype {
-            BitcoinSignVType::P2PKHUncompressed => {
+            BITCOIN_V_TYPE_P2PKHUNCOMPRESSED => {
                 let mut pk_data = Vec::<u8>::new();
                 pk_data.resize(65, 0);
                 pk_data[0] = 4;
@@ -1181,8 +1181,8 @@ impl BitcoinConfig {
 
                 bitcoin_hash160(&pk_data)
             }
-            BitcoinSignVType::P2PKHCompressed => bitcoin_hash160(&pubkey.serialize()),
-            BitcoinSignVType::SegwitP2SH => {
+            BITCOIN_V_TYPE_P2PKHCOMPRESSED => bitcoin_hash160(&pubkey.serialize()),
+            BITCOIN_V_TYPE_SEGWITP2SH => {
                 // Ripemd160(Sha256([00, 20, Ripemd160(Sha256(Compressed Public key))]))
 
                 let mut buf = Vec::<u8>::new();
@@ -1192,7 +1192,10 @@ impl BitcoinConfig {
                 buf[2..].copy_from_slice(&bitcoin_hash160(&pubkey.serialize()));
                 bitcoin_hash160(&buf)
             }
-            BitcoinSignVType::SegwitBech32 => bitcoin_hash160(&pubkey.serialize()),
+            BITCOIN_V_TYPE_SEGWITBECH32 => bitcoin_hash160(&pubkey.serialize()),
+            _ => {
+                panic!("unknow sign_vtype")
+            }
         }
     }
 
@@ -1218,12 +1221,7 @@ impl BitcoinConfig {
             .serialize();
         let recid = sign[64];
 
-        let mark = match self.sign_vtype {
-            BitcoinSignVType::P2PKHUncompressed => recid + 27,
-            BitcoinSignVType::P2PKHCompressed => recid + 31,
-            BitcoinSignVType::SegwitP2SH => recid + 35,
-            BitcoinSignVType::SegwitBech32 => recid + 39,
-        };
+        let mark = recid + self.sign_vtype;
 
         let mut ret = BytesMut::with_capacity(65);
         ret.put_u8(mark);
@@ -1272,13 +1270,13 @@ impl EOSConfig {
         }
         // EOS support
         let buf = match self.0.sign_vtype {
-            BitcoinSignVType::P2PKHUncompressed => {
+            BITCOIN_V_TYPE_P2PKHUNCOMPRESSED => {
                 let mut temp: BytesMut = BytesMut::with_capacity(65);
                 temp.put_u8(4);
                 temp.put(Bytes::from(pubkey.as_bytes().to_vec()));
                 temp.freeze().to_vec()
             }
-            BitcoinSignVType::P2PKHCompressed => pubkey.serialize(),
+            BITCOIN_V_TYPE_P2PKHCOMPRESSED => pubkey.serialize(),
             _ => {
                 panic!("unsupport")
             }
