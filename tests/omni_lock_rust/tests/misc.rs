@@ -1179,11 +1179,9 @@ impl BitcoinConfig {
                 pk_data[0] = 4;
                 pk_data[1..].copy_from_slice(pubkey.as_bytes());
 
-                calculate_ripemd160(&calculate_sha256(&pk_data))
+                bitcoin_hash160(&pk_data)
             }
-            BitcoinSignVType::P2PKHCompressed => {
-                calculate_ripemd160(&calculate_sha256(&pubkey.serialize()))
-            }
+            BitcoinSignVType::P2PKHCompressed => bitcoin_hash160(&pubkey.serialize()),
             BitcoinSignVType::SegwitP2SH => {
                 // Ripemd160(Sha256([00, 20, Ripemd160(Sha256(Compressed Public key))]))
 
@@ -1191,13 +1189,10 @@ impl BitcoinConfig {
                 buf.resize(22, 0);
                 buf[0] = 0;
                 buf[1] = 20;
-                buf[2..]
-                    .copy_from_slice(&calculate_ripemd160(&calculate_sha256(&pubkey.serialize())));
-                calculate_ripemd160(&calculate_sha256(&buf))
+                buf[2..].copy_from_slice(&bitcoin_hash160(&pubkey.serialize()));
+                bitcoin_hash160(&buf)
             }
-            BitcoinSignVType::SegwitBech32 => {
-                calculate_ripemd160(&calculate_sha256(&pubkey.serialize()))
-            }
+            BitcoinSignVType::SegwitBech32 => bitcoin_hash160(&pubkey.serialize()),
         }
     }
 
@@ -1987,4 +1982,8 @@ pub fn calculate_ripemd160(buf: &[u8]) -> [u8; 20] {
     let buf = hasher.finalize()[..].to_vec();
 
     buf.try_into().unwrap()
+}
+
+pub fn bitcoin_hash160(buf: &[u8]) -> [u8; 20] {
+    calculate_ripemd160(&calculate_sha256(buf))
 }
