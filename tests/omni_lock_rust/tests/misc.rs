@@ -645,6 +645,8 @@ pub fn sign_tx_by_input_group(
                 });
                 blake2b.finalize(&mut message);
 
+                println!("origin message: {:02x?}", message);
+
                 let message = if use_chain_confg(config.id.flags) {
                     assert!(config.chain_config.is_some());
                     config
@@ -655,6 +657,8 @@ pub fn sign_tx_by_input_group(
                 } else {
                     CkbH256::from(message)
                 };
+
+                println!("sign message: {:02x?}", message.as_bytes().to_vec());
 
                 let witness_lock = if config.id.flags == IDENTITY_FLAGS_DL {
                     let (mut sig, pubkey) = if config.use_rsa {
@@ -701,6 +705,11 @@ pub fn sign_tx_by_input_group(
                         .as_ref()
                         .unwrap()
                         .sign(&config.private_key, message);
+                    println!(
+                        "bitcoin sign(size: {}): {:02x?}",
+                        sig_bytes.len(),
+                        sig_bytes.to_vec()
+                    );
                     gen_witness_lock(
                         sig_bytes,
                         config.use_rc,
@@ -721,6 +730,12 @@ pub fn sign_tx_by_input_group(
                         None,
                     )
                 };
+
+                println!(
+                    "omni lock witness(size: {}): {:02x?}",
+                    witness_lock.len(),
+                    witness_lock.to_vec()
+                );
 
                 witness
                     .as_builder()
@@ -750,6 +765,11 @@ pub fn sign_tx_by_input_group(
 
 pub fn gen_tx(dummy: &mut DummyDataLoader, config: &mut TestConfig) -> TransactionView {
     let lock_args = config.gen_args();
+    println!(
+        "omni lock args(size: {}): {:02x?}",
+        lock_args.len(),
+        lock_args.to_vec()
+    );
     gen_tx_with_grouped_args(dummy, vec![(lock_args, 1)], config)
 }
 
@@ -1192,7 +1212,10 @@ impl ChainConfig for BitcoinConfig {
                 pk_data[0] = SECP256K1_TAG_PUBKEY_UNCOMPRESSED;
                 pk_data[1..].copy_from_slice(pubkey.as_bytes());
 
-                bitcoin_hash160(&pk_data)
+                let r = bitcoin_hash160(&pk_data);
+                println!("public key hash: {:02x?}", r);
+
+                r
             }
             BITCOIN_V_TYPE_P2PKHCOMPRESSED => bitcoin_hash160(&pubkey.serialize()),
             BITCOIN_V_TYPE_SEGWITP2SH => {
@@ -1212,7 +1235,7 @@ impl ChainConfig for BitcoinConfig {
         }
     }
 
-    pub fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
+    fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
         let message_magic = b"Bitcoin Signed Message:\n";
         let msg_hex = hex::encode(message);
         assert_eq!(msg_hex.len(), 64);
