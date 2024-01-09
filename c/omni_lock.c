@@ -1,5 +1,5 @@
 // uncomment to enable printf in CKB-VM
-// #define CKB_C_STDLIB_PRINTF
+#define CKB_C_STDLIB_PRINTF
 
 // it's used by blockchain-api2.h, the behavior when panic
 #ifndef MOL2_EXIT
@@ -399,9 +399,36 @@ int main() {
 
   err = parse_witness_lock(&witness_lock);
   CHECK(err);
+  printf("---- witness ----");
+  printf("witness has_identity: %d", witness_lock.has_identity);
+  printf("witness has_signature: %d", witness_lock.has_signature);
+  printf("witness has_proofs: %d", witness_lock.has_proofs);
+  printf("witness id.flags: %d", witness_lock.id.flags);
+  print_mem(witness_lock.id.id, 20, "witness id.id");
+
+  printf("witness signature_size: %d", witness_lock.signature_size);
+  print_mem(witness_lock.signature, witness_lock.signature_size, "witness signature");
+
+  printf("witness preimage_size: %d", witness_lock.preimage_size);
+  print_mem(witness_lock.preimage, witness_lock.preimage_size, "witness preimage");
+
+  // TODO proof
 
   err = parse_args(&args);
   CHECK(err);
+
+  printf("---- args ----");
+  printf("args id.flags: %d", args.id.flags);
+  print_mem(args.id.id, 20, "args id.id");
+  printf("args has_omni_root: %d", args.has_omni_root);
+  print_mem(args.omni_root, 32, "args omni_root");
+  printf("args has_since: %d", args.has_since);
+  printf("args since: %d", args.since);
+  printf("args has_acp: %d", args.has_acp);
+  printf("args ckb_minimum: %d", args.ckb_minimum);
+  printf("args udt_minimum: %d", args.udt_minimum);
+  printf("args has_supply: %d", args.has_supply);
+  print_mem(args.info_cell, 32, "args info_cell");
 
   if (args.has_omni_root) {
     if (witness_lock.has_identity) {

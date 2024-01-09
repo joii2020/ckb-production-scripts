@@ -26,6 +26,8 @@
 #define MAX_PREIMAGE_SIZE 1024
 #define MESSAGE_HEX_LEN 64
 
+#include "ckb-dump.h"
+
 enum CkbIdentityErrorCode {
   ERROR_IDENTITY_ARGUMENTS_LEN = -1,
   ERROR_IDENTITY_ENCODING = -2,
@@ -484,8 +486,11 @@ int verify_sighash_all(uint8_t *pubkey_hash, uint8_t *sig, uint32_t sig_len,
   if (ret != 0) {
     return ret;
   }
+  print_mem(old_msg, 32, "old message");
+  
   ret = convert(old_msg, sizeof(old_msg), new_msg, sizeof(new_msg));
   if (ret != 0) return ret;
+  print_mem(new_msg, 32, "new message");
 
   uint8_t output_pubkey_hash[BLAKE160_SIZE];
   size_t output_len = BLAKE160_SIZE;
@@ -494,10 +499,15 @@ int verify_sighash_all(uint8_t *pubkey_hash, uint8_t *sig, uint32_t sig_len,
   if (ret != 0) {
     return ret;
   }
+  print_mem(pubkey_hash, BLAKE160_SIZE, "input public key hash");
+  print_mem(output_pubkey_hash, output_len, "revert public key hash");
+
   if (memcmp(pubkey_hash, output_pubkey_hash, BLAKE160_SIZE) != 0) {
+    printf("public key hash different");
     return ERROR_IDENTITY_PUBKEY_BLAKE160_HASH;
   }
 
+  printf("verify success");
   return 0;
 }
 

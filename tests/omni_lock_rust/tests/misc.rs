@@ -1032,13 +1032,14 @@ pub fn build_resolved_tx(
     }
 }
 
-pub fn debug_printer(script: &Byte32, msg: &str) {
-    let slice = script.as_slice();
-    let str = format!(
-        "Script({:x}{:x}{:x}{:x}{:x})",
-        slice[0], slice[1], slice[2], slice[3], slice[4]
-    );
-    println!("{:?}: {}", str, msg);
+pub fn debug_printer(_script: &Byte32, msg: &str) {
+    // let slice = script.as_slice();
+    // let str = format!(
+    //     "Script({:x}{:x}{:x}{:x}{:x})",
+    //     slice[0], slice[1], slice[2], slice[3], slice[4]
+    // );
+    // println!("{:?}: {}", str, msg);
+    println!("{}", msg);
 }
 
 pub const IDENTITY_FLAGS_PUBKEY_HASH: u8 = 0;

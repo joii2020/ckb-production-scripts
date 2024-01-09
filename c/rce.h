@@ -43,24 +43,26 @@ enum ErrorCode {
   ERROR_TOO_LONG_PROOF,
 };
 
-#define CHECK2(cond, code) \
-  do {                     \
-    if (!(cond)) {         \
-      err = code;          \
-      ASSERT(0);           \
-      goto exit;           \
-    }                      \
-  } while (0)
+#define CHECK2(cond, code)                                  \
+    do {                                                    \
+        if (!(cond)) {                                      \
+            err = code;                                     \
+            printf("check2 failed, return code: %d", code); \
+            ASSERT(0);                                      \
+            goto exit;                                      \
+        }                                                   \
+    } while (0)
 
-#define CHECK(_code)    \
-  do {                  \
-    int code = (_code); \
-    if (code != 0) {    \
-      err = code;       \
-      ASSERT(0);        \
-      goto exit;        \
-    }                   \
-  } while (0)
+#define CHECK(_code)                                       \
+    do {                                                   \
+        int code = (_code);                                \
+        if (code != 0) {                                   \
+            err = code;                                    \
+            printf("check failed, return code: %d", code); \
+            ASSERT(0);                                     \
+            goto exit;                                     \
+        }                                                  \
+    } while (0)
 
 int get_extension_data(uint32_t index, uint8_t* buff, uint32_t buff_len,
                        uint32_t* out_len);
