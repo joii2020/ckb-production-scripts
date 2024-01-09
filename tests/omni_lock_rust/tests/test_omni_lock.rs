@@ -488,6 +488,7 @@ fn test_eth_unlock() {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_ETHEREUM, false);
+    config.set_chain_config(Box::new(EthereumConfig::default()));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -507,10 +508,10 @@ fn test_btc_success(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
-    config.set_bitcoin(BitcoinConfig {
+    config.set_chain_config(Box::new(BitcoinConfig {
         sign_vtype: vtype,
         pubkey_err: false,
-    });
+    }));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -530,10 +531,10 @@ fn test_btc_err_pubkey(vtype: u8) {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_BITCOIN, false);
-    config.set_bitcoin(BitcoinConfig {
+    config.set_chain_config(Box::new(BitcoinConfig {
         sign_vtype: vtype,
         pubkey_err: true,
-    });
+    }));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -568,7 +569,7 @@ fn test_dogecoin_unlock() {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_DOGECOIN, false);
-    config.set_dogecoin(DogecoinConfig::default());
+    config.set_chain_config(Box::new(DogecoinConfig::default()));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -591,7 +592,7 @@ fn test_dogecoin_err_pubkey() {
     let mut config = TestConfig::new(IDENTITY_FLAGS_DOGECOIN, false);
     let mut dogecoin = DogecoinConfig::default();
     dogecoin.0.pubkey_err = true;
-    config.set_dogecoin(dogecoin);
+    config.set_chain_config(Box::new(dogecoin));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -613,7 +614,7 @@ fn test_eos_success(vtype: u8) {
     let mut config = TestConfig::new(IDENTITY_FLAGS_EOS, false);
     let mut eos = EOSConfig::default();
     eos.0.sign_vtype = vtype;
-    config.set_eos(EOSConfig::default());
+    config.set_chain_config(Box::new(EOSConfig::default()));
 
     let tx: ckb_types::core::TransactionView = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -636,7 +637,7 @@ fn test_eos_err_pubkey(vtype: u8) {
     let mut eos = EOSConfig::default();
     eos.0.sign_vtype = vtype;
     eos.0.pubkey_err = true;
-    config.set_eos(eos);
+    config.set_chain_config(Box::new(eos));
 
     let tx: ckb_types::core::TransactionView = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -669,7 +670,7 @@ fn test_tron_unlock() {
     let mut data_loader = DummyDataLoader::new();
 
     let mut config = TestConfig::new(IDENTITY_FLAGS_TRON, false);
-    config.set_tron(TronConfig::default());
+    config.set_chain_config(Box::new(TronConfig::default()));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
@@ -692,7 +693,7 @@ fn test_tron_err_pubkey() {
     let mut config = TestConfig::new(IDENTITY_FLAGS_TRON, false);
     let mut tron = TronConfig::default();
     tron.pubkey_err = true;
-    config.set_tron(tron);
+    config.set_chain_config(Box::new(tron));
 
     let tx = gen_tx(&mut data_loader, &mut config);
     let tx = sign_tx(&mut data_loader, tx, &mut config);
