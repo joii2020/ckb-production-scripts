@@ -553,25 +553,23 @@ int convert_btc_message_variant(const uint8_t *msg, size_t msg_len,
   // Displaying message on wallet like below:
   // Bitcoin layer (CKB) transaction: {txhash}
   //
-  uint8_t temp[MESSAGE_HEX_LEN + prefix_len];
-  memcpy(temp, prefix, prefix_len);
-  bin_to_hex(msg, temp + prefix_len, 32);
+  uint8_t temp[MESSAGE_HEX_LEN];
+  bin_to_hex(msg, temp, 32);
 
-  // len of magic + magic string + len of message, size is 26 Byte
-  uint8_t new_magic[magic_len + 2];
-  new_magic[0] = magic_len;  // MESSAGE_MAGIC length
-  memcpy(&new_magic[1], magic, magic_len);
-  new_magic[magic_len + 1] = MESSAGE_HEX_LEN;  // message length
-
-  /* Calculate signature message */
-  uint8_t temp2[magic_len + 2 + MESSAGE_HEX_LEN];
-  uint32_t temp2_size = magic_len + 2 + MESSAGE_HEX_LEN;
-  memcpy(temp2, new_magic, magic_len + 2);
-  memcpy(temp2 + magic_len + 2, temp, MESSAGE_HEX_LEN);
+  // Signature message:
+  //   magic_len   magic     prefix_len+MESSAGE_HEX_LEN    prefix    message_hex
+  //      1       magic_len           1                  prefix_len   64
+  uint8_t data[magic_len + 2 + MESSAGE_HEX_LEN + prefix_len];
+  data[0] = magic_len;
+  memcpy(data + 1, magic, magic_len);
+  
+  data[magic_len + 1] = MESSAGE_HEX_LEN + prefix_len;
+  memcpy(data + magic_len + 2, prefix, prefix_len);
+  memcpy(data + magic_len + 2 + prefix_len, temp, MESSAGE_HEX_LEN);
 
   SHA256_CTX sha256_ctx;
   sha256_init(&sha256_ctx);
-  sha256_update(&sha256_ctx, temp2, temp2_size);
+  sha256_update(&sha256_ctx, data, sizeof(data));
   sha256_final(&sha256_ctx, new_msg);
 
   SHA256_CTX sha256_ctx2;
