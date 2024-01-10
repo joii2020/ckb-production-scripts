@@ -92,12 +92,15 @@ pub const SECP256K1_TAG_PUBKEY_HYBRID_ODD: u8 = 0x07;
 
 // Refer to https://en.bitcoin.it/wiki/BIP_0137
 // These values are used to denote the signature types of Bitcoin.
-// Each type corresponds to a distinct public key hash and a unique signature 
+// Each type corresponds to a distinct public key hash and a unique signature
 //      data header.
 pub const BITCOIN_V_TYPE_P2PKHUNCOMPRESSED: u8 = 27;
 pub const BITCOIN_V_TYPE_P2PKHCOMPRESSED: u8 = 31;
 pub const BITCOIN_V_TYPE_SEGWITP2SH: u8 = 35;
 pub const BITCOIN_V_TYPE_SEGWITBECH32: u8 = 39;
+
+pub const BTC_PREFIX: &str = "CKB (Bitcoin Layer-2) transaction: ";
+pub const COMMON_PREFIX: &str = "CKB transaction: ";
 
 lazy_static! {
     pub static ref OMNI_LOCK: Bytes = Bytes::from(&include_bytes!("../../../build/omni_lock")[..]);
@@ -1211,13 +1214,22 @@ impl BitcoinConfig {
     }
 
     pub fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
-        let message_magic = b"\x18Bitcoin Signed Message:\n\x40";
+        let message_magic = b"Bitcoin Signed Message:\n";
         let msg_hex = hex::encode(message);
         assert_eq!(msg_hex.len(), 64);
 
-        let mut temp2: BytesMut = BytesMut::with_capacity(message_magic.len() + msg_hex.len());
+        let mut temp2: BytesMut =
+            BytesMut::with_capacity(1 + message_magic.len() + 1 + BTC_PREFIX.len() + msg_hex.len());
+        temp2.put_u8(message_magic.len() as u8);
         temp2.put(Bytes::from(message_magic.to_vec()));
-        temp2.put(Bytes::from(hex::encode(message)));
+
+        temp2.put_u8(0x40 + BTC_PREFIX.len() as u8);
+
+        temp2.put(Bytes::from(format!(
+            "{}{}",
+            BTC_PREFIX,
+            hex::encode(message)
+        )));
 
         let msg = calculate_sha256(&temp2.to_vec());
         let msg = calculate_sha256(&msg);
