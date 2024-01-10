@@ -1262,12 +1262,15 @@ impl DogecoinConfig {
     }
 
     pub fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
-        let message_magic = b"\x19Dogecoin Signed Message:\n\x40";
+        let message_magic = b"\x19Dogecoin Signed Message:\n";
         let msg_hex = hex::encode(message);
         assert_eq!(msg_hex.len(), 64);
 
-        let mut temp2: BytesMut = BytesMut::with_capacity(message_magic.len() + msg_hex.len());
+        let mut temp2: BytesMut =
+            BytesMut::with_capacity(message_magic.len() + 1 + COMMON_PREFIX.len() + msg_hex.len());
         temp2.put(Bytes::from(message_magic.to_vec()));
+        temp2.put_u8(0x40 + COMMON_PREFIX.len() as u8);
+        temp2.put(COMMON_PREFIX.as_bytes());
         temp2.put(Bytes::from(hex::encode(message)));
 
         let msg = calculate_sha256(&temp2.to_vec());
@@ -1340,10 +1343,16 @@ impl TronConfig {
     }
 
     pub fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
-        let eth_prefix: &[u8; 24] = b"\x19TRON Signed Message:\n32";
+        let eth_prefix = b"\x19TRON Signed Message:\n32";
+
+        let mut temp =
+            BytesMut::with_capacity(eth_prefix.len() + 1 + COMMON_PREFIX.len() + message.len());
+        temp.put(Bytes::from(eth_prefix.to_vec()));
+        temp.put(COMMON_PREFIX.as_bytes());
+        temp.put(Bytes::from(message.to_vec()));
+
         let mut hasher = Keccak256::new();
-        hasher.update(eth_prefix);
-        hasher.update(message);
+        hasher.update(temp.to_vec());
         let r = hasher.finalize();
         let rr = CkbH256::from_slice(r.as_slice()).expect("convert_keccak256_hash");
         rr
