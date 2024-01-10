@@ -26,6 +26,14 @@
 #define MAX_PREIMAGE_SIZE 1024
 #define MESSAGE_HEX_LEN 64
 
+const char BTC_PREFIX[] = "Bitcoin layer (CKB) transaction: ";
+// BTC_PREFIX_LEN = 33
+const size_t BTC_PREFIX_LEN = sizeof(BTC_PREFIX) - 1;
+
+const char COMMON_PREFIX[] = "CKB transaction: ";
+// COMMON_PREFIX_LEN = 17
+const size_t COMMON_PREFIX_LEN = sizeof(COMMON_PREFIX) - 1;
+
 enum CkbIdentityErrorCode {
   ERROR_IDENTITY_ARGUMENTS_LEN = -1,
   ERROR_IDENTITY_ENCODING = -2,
@@ -62,6 +70,7 @@ enum IdentityFlagsType {
   IdentityFlagsDogecoin = 5,
   IdentityCkbMultisig = 6,
 
+  IdentityFlagsEthereumDisplaying = 18,
   IdentityFlagsOwnerLock = 0xFC,
   IdentityFlagsExec = 0xFD,
   IdentityFlagsDl = 0xFE,
@@ -475,6 +484,30 @@ static int convert_eth_message(const uint8_t *msg, size_t msg_len,
   return 0;
 }
 
+static int convert_eth_message_displaying(const uint8_t *msg, size_t msg_len,
+                                          uint8_t *new_msg,
+                                          size_t new_msg_len) {
+  if (msg_len != new_msg_len || msg_len != BLAKE2B_BLOCK_SIZE)
+    return ERROR_IDENTITY_ARGUMENTS_LEN;
+
+  SHA3_CTX sha3_ctx;
+  keccak_init(&sha3_ctx);
+  /* personal hash, ethereum prefix  \u0019Ethereum Signed Message:\n32  */
+  unsigned char eth_prefix[28];
+  eth_prefix[0] = 0x19;
+  memcpy(eth_prefix + 1, "Ethereum Signed Message:\n32", 27);
+
+  keccak_update(&sha3_ctx, eth_prefix, 28);
+  //
+  // Displaying message on wallet like below:
+  // CKB transaction: {txhash}
+  //
+  keccak_update(&sha3_ctx, (unsigned char *)COMMON_PREFIX, COMMON_PREFIX_LEN);
+  keccak_update(&sha3_ctx, (unsigned char *)msg, 32);
+  keccak_final(&sha3_ctx, new_msg);
+  return 0;
+}
+
 int verify_sighash_all(uint8_t *pubkey_hash, uint8_t *sig, uint32_t sig_len,
                        validate_signature_t func, convert_msg_t convert) {
   int ret = 0;
@@ -512,12 +545,17 @@ static void bin_to_hex(const uint8_t *source, uint8_t *dest, size_t len) {
 
 int convert_btc_message_variant(const uint8_t *msg, size_t msg_len,
                                 uint8_t *new_msg, size_t new_msg_len,
-                                const char *magic, const uint8_t magic_len) {
+                                const char *magic, const uint8_t magic_len,
+                                const char *prefix, size_t prefix_len) {
   if (msg_len != new_msg_len || msg_len != SHA256_SIZE)
     return ERROR_INVALID_ARG;
-
-  uint8_t temp[MESSAGE_HEX_LEN];
-  bin_to_hex(msg, temp, 32);
+  //
+  // Displaying message on wallet like below:
+  // Bitcoin layer (CKB) transaction: {txhash}
+  //
+  uint8_t temp[MESSAGE_HEX_LEN + prefix_len];
+  memcpy(temp, prefix, prefix_len);
+  bin_to_hex(msg, temp + prefix_len, 32);
 
   // len of magic + magic string + len of message, size is 26 Byte
   uint8_t new_magic[magic_len + 2];
@@ -553,11 +591,11 @@ int convert_copy(const uint8_t *msg, size_t msg_len, uint8_t *new_msg,
 
 const char BTC_MESSAGE_MAGIC[25] = "Bitcoin Signed Message:\n";
 const int8_t BTC_MAGIC_LEN = 24;
-
 int convert_btc_message(const uint8_t *msg, size_t msg_len, uint8_t *new_msg,
                         size_t new_msg_len) {
   return convert_btc_message_variant(msg, msg_len, new_msg, new_msg_len,
-                                     BTC_MESSAGE_MAGIC, BTC_MAGIC_LEN);
+                                     BTC_MESSAGE_MAGIC, BTC_MAGIC_LEN,
+                                     BTC_PREFIX, BTC_PREFIX_LEN);
 }
 
 const char DOGE_MESSAGE_MAGIC[26] = "Dogecoin Signed Message:\n";
@@ -566,7 +604,8 @@ const int8_t DOGE_MAGIC_LEN = 25;
 int convert_doge_message(const uint8_t *msg, size_t msg_len, uint8_t *new_msg,
                          size_t new_msg_len) {
   return convert_btc_message_variant(msg, msg_len, new_msg, new_msg_len,
-                                     DOGE_MESSAGE_MAGIC, DOGE_MAGIC_LEN);
+                                     DOGE_MESSAGE_MAGIC, DOGE_MAGIC_LEN,
+                                     COMMON_PREFIX, COMMON_PREFIX_LEN);
 }
 
 int convert_tron_message(const uint8_t *msg, size_t msg_len, uint8_t *new_msg,
@@ -583,6 +622,11 @@ int convert_tron_message(const uint8_t *msg, size_t msg_len, uint8_t *new_msg,
   memcpy(tron_prefix + 1, "TRON Signed Message:\n32", 23);
 
   keccak_update(&sha3_ctx, tron_prefix, 24);
+  //
+  // Displaying message on wallet like below:
+  // CKB transaction: {txhash}
+  //
+  keccak_update(&sha3_ctx, (unsigned char *)COMMON_PREFIX, COMMON_PREFIX_LEN);
   keccak_update(&sha3_ctx, (unsigned char *)msg, 32);
   keccak_final(&sha3_ctx, new_msg);
   return 0;
@@ -867,7 +911,12 @@ int ckb_verify_identity(CkbIdentityType *id, uint8_t *sig, uint32_t sig_size,
     }
     return verify_sighash_all(id->id, sig, sig_size, validate_signature_eth,
                               convert_eth_message);
-
+  } else if (id->flags == IdentityFlagsEthereumDisplaying) {
+    if (sig == NULL || sig_size != SECP256K1_SIGNATURE_SIZE) {
+      return ERROR_IDENTITY_WRONG_ARGS;
+    }
+    return verify_sighash_all(id->id, sig, sig_size, validate_signature_eth,
+                              convert_eth_message_displaying);
   } else if (id->flags == IdentityFlagsEos) {
     if (sig == NULL || sig_size != SECP256K1_SIGNATURE_SIZE) {
       return ERROR_IDENTITY_WRONG_ARGS;
