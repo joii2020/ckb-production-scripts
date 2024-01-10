@@ -26,8 +26,8 @@
 #define MAX_PREIMAGE_SIZE 1024
 #define MESSAGE_HEX_LEN 64
 
-const char BTC_PREFIX[] = "Bitcoin layer (CKB) transaction: ";
-// BTC_PREFIX_LEN = 33
+const char BTC_PREFIX[] = "CKB (Bitcoin Layer-2) transaction: ";
+// BTC_PREFIX_LEN = 35
 const size_t BTC_PREFIX_LEN = sizeof(BTC_PREFIX) - 1;
 
 const char COMMON_PREFIX[] = "CKB transaction: ";
