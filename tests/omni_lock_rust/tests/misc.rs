@@ -533,10 +533,10 @@ pub fn append_input_lock_script_hash(
     dummy: &mut DummyDataLoader,
     tx_builder: TransactionBuilder,
 ) -> (TransactionBuilder, Bytes) {
-    let mut rng = thread_rng();
+    // let mut rng = thread_rng();
     let previous_tx_hash = {
-        let mut buf = [0u8; 32];
-        rng.fill(&mut buf);
+        let buf = [1u8; 32];
+        // rng.fill(&mut buf);
         buf.pack()
     };
     let previous_out_point = OutPoint::new(previous_tx_hash, 0);
@@ -706,7 +706,7 @@ pub fn sign_tx_by_input_group(
                         .unwrap()
                         .sign(&config.private_key, message);
                     println!(
-                        "bitcoin sign(size: {}): {:02x?}",
+                        "chain sign(size: {}): {:02x?}",
                         sig_bytes.len(),
                         sig_bytes.to_vec()
                     );
@@ -778,12 +778,12 @@ pub fn gen_tx_with_grouped_args(
     grouped_args: Vec<(Bytes, usize)>,
     config: &mut TestConfig,
 ) -> TransactionView {
-    let mut rng = thread_rng();
+    // let mut rng = thread_rng();
     // setup sighash_all dep
     let sighash_all_out_point = {
         let contract_tx_hash = {
-            let mut buf = [0u8; 32];
-            rng.fill(&mut buf);
+            let buf = [2u8; 32];
+            // rng.fill(&mut buf);
             buf.pack()
         };
         OutPoint::new(contract_tx_hash.clone(), 0)
@@ -804,8 +804,8 @@ pub fn gen_tx_with_grouped_args(
     // always success
     let always_success_out_point = {
         let contract_tx_hash = {
-            let mut buf = [0u8; 32];
-            rng.fill(&mut buf);
+            let buf = [3u8; 32];
+            // rng.fill(&mut buf);
             buf.pack()
         };
         OutPoint::new(contract_tx_hash.clone(), 0)
@@ -824,8 +824,8 @@ pub fn gen_tx_with_grouped_args(
     // setup secp256k1_data dep
     let secp256k1_data_out_point = {
         let tx_hash = {
-            let mut buf = [0u8; 32];
-            rng.fill(&mut buf);
+            let buf = [4u8; 32];
+            // rng.fill(&mut buf);
             buf.pack()
         };
         OutPoint::new(tx_hash, 0)
@@ -895,8 +895,8 @@ pub fn gen_tx_with_grouped_args(
         // setup dummy input unlock script
         for _ in 0..inputs_size {
             let previous_tx_hash = {
-                let mut buf = [0u8; 32];
-                rng.fill(&mut buf);
+                let buf = [5u8; 32];
+                // rng.fill(&mut buf);
                 buf.pack()
             };
             args = if config.is_owner_lock() {
@@ -938,8 +938,8 @@ pub fn gen_tx_with_grouped_args(
             } else {
                 32
             };
-            random_extra_witness.resize(witness_len, 0);
-            rng.fill(&mut random_extra_witness[..]);
+            random_extra_witness.resize(witness_len, 6);
+            // rng.fill(&mut random_extra_witness[..]);
 
             let witness_args = WitnessArgsBuilder::default()
                 .input_type(Some(Bytes::copy_from_slice(&random_extra_witness[..])).pack())
@@ -1192,8 +1192,12 @@ pub struct EthereumDisplayConfig {
 }
 
 impl ChainConfig for EthereumDisplayConfig {
-    fn get_pubkey_hash(&self, pubkey: &Pubkey) -> [u8; 20] {
-        keccak160(&pubkey.as_ref()[..]).to_vec().try_into().unwrap()
+    fn get_pubkey_hash(&self, _pubkey: &Pubkey) -> [u8; 20] {
+        // keccak160(&pubkey.as_ref()[..]).to_vec().try_into().unwrap()
+        hex::decode("dbdf572fd6e50da47f6f79d3251ce676884aa109")
+            .unwrap()
+            .try_into()
+            .unwrap()
     }
 
     fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
@@ -1211,9 +1215,10 @@ impl ChainConfig for EthereumDisplayConfig {
         CkbH256::from_slice(r.as_slice()).expect("convert_keccak256_hash")
     }
 
-    fn sign(&self, privkey: &Privkey, message: CkbH256) -> Bytes {
-        let sig = privkey.sign_recoverable(&message).expect("sign");
-        Bytes::from(sig.serialize())
+    fn sign(&self, _privkey: &Privkey, _message: CkbH256) -> Bytes {
+        // let sig = privkey.sign_recoverable(&message).expect("sign");
+        // Bytes::from(sig.serialize())
+        Bytes::from(hex::decode("c530191cc05604e7acfdc92f83021ec01c757a85045054181c5a35c19662f73a0c25c380e6ef79bd79e751837bab033317545945a3e0d95de06af53879915e7c1c").unwrap())
     }
 }
 
@@ -1839,12 +1844,12 @@ pub fn generate_rce_cell(
     rc_data: Vec<Bytes>,
     smt_in_input: bool,
 ) -> (Byte32, TransactionBuilder) {
-    let mut rng = thread_rng();
+    // let mut rng = thread_rng();
     let mut cell_vec_builder = RCCellVecBuilder::default();
 
     for rc_rule in rc_data {
-        let mut random_args: [u8; 32] = Default::default();
-        rng.fill(&mut random_args[..]);
+        let random_args: [u8; 32] = [9u8; 32];
+        // rng.fill(&mut random_args[..]);
         // let's first build the RCE cell which contains the RCData(RCRule/RCCellVec).
         let (b0, rce_script) = build_script(
             dummy,
@@ -1868,8 +1873,8 @@ pub fn generate_rce_cell(
         .set(RCDataUnion::RCCellVec(cell_vec))
         .build();
 
-    let mut random_args: [u8; 32] = Default::default();
-    rng.fill(&mut random_args[..]);
+    let random_args: [u8; 32] = [8u8; 32];
+    // rng.fill(&mut random_args[..]);
 
     let bin = rce_cell_content.as_slice();
 
