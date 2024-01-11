@@ -709,3 +709,24 @@ fn test_tron_err_pubkey() {
     assert!(verify_result.is_err());
     assert_script_error(verify_result.unwrap_err(), ERROR_PUBKEY_BLAKE160_HASH);
 }
+
+#[test]
+fn test_eth_displaying_unlock() {
+    let mut data_loader = DummyDataLoader::new();
+
+    let mut config = TestConfig::new(IDENTITY_FLAGS_ETHEREUM_DISPLAYING, false);
+    config.set_chain_config(Box::new(EthereumDisplayConfig::default()));
+
+    let tx = gen_tx(&mut data_loader, &mut config);
+    let tx = sign_tx(&mut data_loader, tx, &mut config);
+    let resolved_tx = build_resolved_tx(&data_loader, &tx);
+
+    let consensus = misc::gen_consensus();
+    let tx_env = misc::gen_tx_env();
+    let mut verifier =
+        TransactionScriptsVerifier::new(&resolved_tx, &consensus, &data_loader, &tx_env);
+
+    verifier.set_debug_printer(debug_printer);
+    let verify_result = verifier.verify(MAX_CYCLES);
+    verify_result.expect("pass verification");
+}

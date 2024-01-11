@@ -1036,6 +1036,7 @@ pub const IDENTITY_FLAGS_TRON: u8 = 3;
 pub const IDENTITY_FLAGS_BITCOIN: u8 = 4;
 pub const IDENTITY_FLAGS_DOGECOIN: u8 = 5;
 pub const IDENTITY_FLAGS_MULTISIG: u8 = 6;
+pub const IDENTITY_FLAGS_ETHEREUM_DISPLAYING: u8 = 18;
 
 pub const IDENTITY_FLAGS_OWNER_LOCK: u8 = 0xFC;
 pub const IDENTITY_FLAGS_EXEC: u8 = 0xFD;
@@ -1162,6 +1163,7 @@ pub fn use_chain_confg(flags: u8) -> bool {
         || flags == IDENTITY_FLAGS_TRON
         || flags == IDENTITY_FLAGS_BITCOIN
         || flags == IDENTITY_FLAGS_DOGECOIN
+        || flags == IDENTITY_FLAGS_ETHEREUM_DISPLAYING
 }
 
 #[derive(Default)]
@@ -1176,6 +1178,37 @@ impl ChainConfig for EthereumConfig {
 
     fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
         convert_keccak256_hash(message)
+    }
+
+    fn sign(&self, privkey: &Privkey, message: CkbH256) -> Bytes {
+        let sig = privkey.sign_recoverable(&message).expect("sign");
+        Bytes::from(sig.serialize())
+    }
+}
+
+#[derive(Default)]
+pub struct EthereumDisplayConfig {
+    pub pubkey_err: bool,
+}
+
+impl ChainConfig for EthereumDisplayConfig {
+    fn get_pubkey_hash(&self, pubkey: &Pubkey) -> [u8; 20] {
+        keccak160(&pubkey.as_ref()[..]).to_vec().try_into().unwrap()
+    }
+
+    fn convert_message(&self, message: &[u8; 32]) -> CkbH256 {
+        let eth_prefix = b"\x19Ethereum Signed Message:\n";
+
+        let mut hasher = Keccak256::new();
+        hasher.update(eth_prefix);
+        hasher.update(Bytes::from(format!(
+            "{}",
+            COMMON_PREFIX.len() + message.len() * 2
+        )));
+        hasher.update(Bytes::from(COMMON_PREFIX));
+        hasher.update(hex::encode(message));
+        let r = hasher.finalize();
+        CkbH256::from_slice(r.as_slice()).expect("convert_keccak256_hash")
     }
 
     fn sign(&self, privkey: &Privkey, message: CkbH256) -> Bytes {
